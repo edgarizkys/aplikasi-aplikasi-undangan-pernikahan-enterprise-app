@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Aplikasi Undangan Pernikahan Enterprise - Sistem Manajemen Undangan Pernikahan Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen relative" x-data="appData()" x-init="initCharts()">
+    <canvas id="particle-canvas"></canvas>
+    <div class="scanlines"></div>
+
+    <header class="border-b border-slate-800/60 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <a href="/" class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-600 to-fuchsia-600 flex items-center justify-center text-lg shadow-lg hover:scale-110 transition-transform">ðŸ’’</a>
+                <div>
+                    <h1 class="text-base font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Aplikasi Aplikasi Undangan Pernikahan Enterprise</h1>
+                    <p class="text-[10px] text-slate-500">Sistem Manajemen Undangan Pernikahan Enterprise</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                    <span class="text-slate-500 text-[10px]">Role:</span>
+                    <select x-model="userRole" class="bg-transparent text-pink-400 font-bold cursor-pointer focus:outline-none text-xs">
+                        <option value="SUPERADMIN">SUPERADMIN</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="MANAGER">MANAGER</option>
+                        <option value="STAFF">STAFF</option>
+                    </select>
+                </div>
+
+                <nav class="hidden md:flex bg-slate-900/80 border border-slate-800 rounded-2xl p-1 text-xs flex-wrap gap-1">
+                    <button @click="activeTab='dashboard'" :class="activeTab==='dashboard'?'bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-3 py-1.5 rounded-xl text-xs transition-all">Dashboard</button>
+                    <button @click="activeTab='tamu'" :class="activeTab==='tamu'?' bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs transition-all">Daftar Tamu & RSVP</button> <button @click="activeTab='vendor'" :class="activeTab==='vendor'?' bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs transition-all">Vendor & Partner</button> <button @click="activeTab='anggaran'" :class="activeTab==='anggaran'?' bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs transition-all">Anggaran & Pengeluaran</button> <button @click="activeTab='audit_log'" :class="activeTab==='audit_log'?' bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs transition-all">ðŸ“œ Audit Logs</button> <button @click="activeTab='subscription'" :class="activeTab==='subscription'?' bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold shadow-lg':'text-slate-400 hover:text-white'" class="px-4 py-2 rounded-xl text-xs transition-all">ðŸ’Ž Subscription</button>
+                </nav>
+
+                <button @click="showNotifModal = true" class="relative px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span class="bg-cyan-500 text-slate-950 text-[9px] font-bold px-1.5 py-0.2 rounded-full" x-text="notifications.length"></span>
+                </button>
+                <button @click="showQrisModal = true" class="hidden sm:flex px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:text-white text-xs font-semibold rounded-xl items-center gap-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Payment
+                </button>
+
+                <div class="relative" x-data="{
+                    open: false,
+                    userName: JSON.parse(localStorage.getItem('app_user') || '{}').name || 'User',
+                    userEmail: JSON.parse(localStorage.getItem('app_user') || '{}').email || 'user@email.com'
+                }">
+                    <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/60 border border-slate-700 rounded-xl text-xs text-slate-300 hover:text-white hover:border-slate-600 transition-all">
+                        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-pink-600 to-fuchsia-600 flex items-center justify-center text-[10px] font-bold text-white" x-text="userName.charAt(0).toUpperCase()"></div>
+                        <span class="hidden sm:inline" x-text="userName"></span>
+                        <svg class="w-3 h-3 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-56 glass-enhanced border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                        <div class="px-4 py-3 border-b border-slate-800">
+                            <p class="text-xs font-bold text-white" x-text="userName"></p>
+                            <p class="text-[10px] text-slate-500 truncate" x-text="userEmail"></p>
+                        </div>
+                        <a href="/" class="flex items-center gap-2 px-4 py-2.5 text-xs text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Landing Page
+                        </a>
+                        <button @click="handleLogout()" class="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+                <button @click="mobileNavOpen = !mobileNavOpen" class="md:hidden px-2 py-1.5 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="mobileNavOpen" x-transition class="md:hidden border-t border-slate-800/60 px-4 py-2 bg-slate-900/80">
+            <button @click="activeTab='dashboard'; mobileNavOpen=false" :class="activeTab==='dashboard'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Dashboard</button>
+            <button @click="activeTab='tamu'; mobileNavOpen=false" :class="activeTab==='tamu'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Daftar Tamu & RSVP</button><button @click="activeTab='vendor'; mobileNavOpen=false" :class="activeTab==='vendor'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Vendor & Partner</button><button @click="activeTab='anggaran'; mobileNavOpen=false" :class="activeTab==='anggaran'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Anggaran & Pengeluaran</button>
+            <button @click="activeTab='audit_log'; mobileNavOpen=false" :class="activeTab==='audit_log'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Audit Logs</button>
+            <button @click="activeTab='subscription'; mobileNavOpen=false" :class="activeTab==='subscription'?'text-white font-bold':'text-slate-400'" class="block w-full text-left px-3 py-2 rounded-xl text-xs transition-all">Subscription</button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8 relative z-10">
+        <div x-show="activeTab==='dashboard'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4"><div class="glass-enhanced border border-slate-800 hover:border-pink-500/30 p-5 rounded-2xl transition-all hover-glow relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-pink-600 rounded-full blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div class="flex justify-between items-start relative z-10">
+                    <div><p class="text-xs text-slate-400 mb-1">Tamu Undangan</p><h3 class="text-2xl font-bold text-white" x-text="tamu.length">0</h3></div>
+                    <span class="text-2xl">ðŸ’Œ</span>
+                </div>
+            </div> <div class="glass-enhanced border border-slate-800 hover:border-pink-500/30 p-5 rounded-2xl transition-all hover-glow relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-pink-600 rounded-full blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div class="flex justify-between items-start relative z-10">
+                    <div><p class="text-xs text-slate-400 mb-1">Vendor Aktif</p><h3 class="text-2xl font-bold text-white" x-text="vendor.length">0</h3></div>
+                    <span class="text-2xl">ðŸ¤</span>
+                </div>
+            </div> <div class="glass-enhanced border border-slate-800 hover:border-pink-500/30 p-5 rounded-2xl transition-all hover-glow relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-pink-600 rounded-full blur-[40px] opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div class="flex justify-between items-start relative z-10">
+                    <div><p class="text-xs text-slate-400 mb-1">Anggaran Terpakai</p><h3 class="text-2xl font-bold text-white" x-text="anggaran.length">0</h3></div>
+                    <span class="text-2xl">ðŸ’°</span>
+                </div>
+            </div></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 glass-enhanced border border-slate-800 p-6 rounded-2xl shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Analytics
+                        </h3>
+                        <span class="text-[10px] bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-2 py-1 rounded-lg">Real-Time</span>
+                    </div>
+                    <div class="h-64 relative">
+                        <canvas id="mainAnalyticsChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-enhanced border border-slate-800 p-6 rounded-2xl shadow-xl flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            Engine Status
+                        </h3>
+                        <div class="space-y-2.5 text-xs">
+                            <div class="flex justify-between"><span class="text-slate-400">Auth / RBAC</span><span class="text-emerald-400 font-bold" x-text="userRole + ' Active'"></span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Monetization</span><span class="text-indigo-400 font-bold">Midtrans / Xendit</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Omnichannel</span><span class="text-cyan-400 font-bold">WA & TG Gateway</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Asset Manager</span><span class="text-amber-400 font-bold">Image Upload</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Audit Tracing</span><span class="text-emerald-400 font-bold" x-text="auditLogs.length + ' Logs'"></span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Report Engine</span><span class="text-white font-bold">PDF & Print</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Rate Limiter</span><span class="text-emerald-400 font-bold">100 req/min</span></div>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-800/80 flex gap-2">
+                        <button @click="window.print()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            Cetak
+                        </button>
+                        <button @click="triggerWAGateway()" class="flex-1 bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 hover:text-white font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            WA Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <div x-show="activeTab==='tamu'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>ðŸ’’</span> Daftar Tamu & RSVP</h2>
+                <div class="flex items-center gap-2">
+                    <button @click="exportCsv('tamu')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2 rounded-xl transition-all border border-slate-700 flex items-center gap-1.5 hover-glow">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Export
+                    </button>
+                    <button @click="openCreateModal('tamu')" class="bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 btn-shine">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Daftar Tamu & RSVP
+                    </button>
+                </div>
+            </div>
+            <div class="glass-enhanced border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-950/80 text-slate-400 uppercase border-b border-slate-800"><tr><th class="p-3 text-[10px]">#</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Nama Tamu</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Hubungan</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Jumlah Orang</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Konfirmasi (Hadir/Tidak)</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Catatan</th><th class="p-3 text-center text-[10px]">Aksi</th></tr></thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            <template x-for="(item, idx) in tamu" :key="item.id || idx">
+                                <tr class="hover:bg-slate-800/30 transition-all duration-200 group">
+                                    <td class="p-3 text-slate-500 font-mono" x-text="idx+1"></td>
+                                    <td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.nama"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.hubungan"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.jumlah"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.konfirmasi"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.catatan"></td>
+                                    <td class="p-3 text-center space-x-2">
+                                        <button @click="openEditModal(item, idx, 'tamu')" class="text-amber-400 hover:text-amber-300 text-xs font-bold hover:bg-amber-500/10 px-2.5 py-1 rounded-lg transition-all border border-amber-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            Edit
+                                        </button>
+                                        <button @click="deleteItem(idx, 'tamu')" class="text-red-400 hover:text-red-300 text-xs font-bold hover:bg-red-500/10 px-2.5 py-1 rounded-lg transition-all border border-red-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div x-show="activeTab==='vendor'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>ðŸ’’</span> Vendor & Partner</h2>
+                <div class="flex items-center gap-2">
+                    <button @click="exportCsv('vendor')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2 rounded-xl transition-all border border-slate-700 flex items-center gap-1.5 hover-glow">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Export
+                    </button>
+                    <button @click="openCreateModal('vendor')" class="bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 btn-shine">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Vendor & Partner
+                    </button>
+                </div>
+            </div>
+            <div class="glass-enhanced border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-950/80 text-slate-400 uppercase border-b border-slate-800"><tr><th class="p-3 text-[10px]">#</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Nama Vendor</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Kategori Layanan</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Biaya (Rp)</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Kontak</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Status Kontrak</th><th class="p-3 text-center text-[10px]">Aksi</th></tr></thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            <template x-for="(item, idx) in vendor" :key="item.id || idx">
+                                <tr class="hover:bg-slate-800/30 transition-all duration-200 group">
+                                    <td class="p-3 text-slate-500 font-mono" x-text="idx+1"></td>
+                                    <td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.nama"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.kategori"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.biaya"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.kontak"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.status"></td>
+                                    <td class="p-3 text-center space-x-2">
+                                        <button @click="openEditModal(item, idx, 'vendor')" class="text-amber-400 hover:text-amber-300 text-xs font-bold hover:bg-amber-500/10 px-2.5 py-1 rounded-lg transition-all border border-amber-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            Edit
+                                        </button>
+                                        <button @click="deleteItem(idx, 'vendor')" class="text-red-400 hover:text-red-300 text-xs font-bold hover:bg-red-500/10 px-2.5 py-1 rounded-lg transition-all border border-red-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div x-show="activeTab==='anggaran'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="space-y-4">
+            <div class="flex justify-between items-center flex-wrap gap-3">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>ðŸ’’</span> Anggaran & Pengeluaran</h2>
+                <div class="flex items-center gap-2">
+                    <button @click="exportCsv('anggaran')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2 rounded-xl transition-all border border-slate-700 flex items-center gap-1.5 hover-glow">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Export
+                    </button>
+                    <button @click="openCreateModal('anggaran')" class="bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 btn-shine">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Anggaran & Pengeluaran
+                    </button>
+                </div>
+            </div>
+            <div class="glass-enhanced border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead class="bg-slate-950/80 text-slate-400 uppercase border-b border-slate-800"><tr><th class="p-3 text-[10px]">#</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Item Pengeluaran</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Anggaran (Rp)</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Realisasi (Rp)</th><th class="p-3 text-left text-[10px] uppercase tracking-wider">Status Bayar</th><th class="p-3 text-center text-[10px]">Aksi</th></tr></thead>
+                        <tbody class="divide-y divide-slate-800/50">
+                            <template x-for="(item, idx) in anggaran" :key="item.id || idx">
+                                <tr class="hover:bg-slate-800/30 transition-all duration-200 group">
+                                    <td class="p-3 text-slate-500 font-mono" x-text="idx+1"></td>
+                                    <td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.item"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.anggaran"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.realisasi"></td><td class="p-3 font-semibold text-slate-200 text-xs" x-text="item.status"></td>
+                                    <td class="p-3 text-center space-x-2">
+                                        <button @click="openEditModal(item, idx, 'anggaran')" class="text-amber-400 hover:text-amber-300 text-xs font-bold hover:bg-amber-500/10 px-2.5 py-1 rounded-lg transition-all border border-amber-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            Edit
+                                        </button>
+                                        <button @click="deleteItem(idx, 'anggaran')" class="text-red-400 hover:text-red-300 text-xs font-bold hover:bg-red-500/10 px-2.5 py-1 rounded-lg transition-all border border-red-500/30 inline-flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div x-show="activeTab==='audit_log'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>ðŸ“œ</span> Enterprise Audit Logs</h2>
+                <button @click="auditLogs=[]; persistAuditLogs()" class="text-xs text-rose-400 hover:text-rose-300 font-bold border border-rose-500/30 px-3 py-1.5 rounded-xl hover:bg-rose-500/10 transition-all">Clear Logs</button>
+            </div>
+            <div class="glass-enhanced border border-slate-800 rounded-2xl p-4 overflow-hidden shadow-xl">
+                <table class="w-full text-xs text-left">
+                    <thead class="bg-slate-950/80 text-slate-400 uppercase text-[10px]">
+                        <tr><th class="p-2.5">Waktu</th><th class="p-2.5">User</th><th class="p-2.5">Aksi</th><th class="p-2.5">Detail</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/50">
+                        <template x-for="log in auditLogs" :key="log.id">
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="p-2.5 font-mono text-slate-400" x-text="log.timestamp"></td>
+                                <td class="p-2.5 font-bold text-cyan-400" x-text="log.user"></td>
+                                <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-white" x-text="log.action"></span></td>
+                                <td class="p-2.5 font-mono text-slate-300 truncate max-w-xs" x-text="log.details"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div x-show="activeTab==='subscription'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-4">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>ðŸ’Ž</span> Subscription & Billing</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-enhanced border border-slate-800 p-5 rounded-2xl space-y-3">
+                    <div class="text-xs text-slate-400">Starter Free</div>
+                    <div class="text-2xl font-bold text-white">Rp 0 <span class="text-xs font-normal text-slate-400">/bln</span></div>
+                    <ul class="text-xs text-slate-300 space-y-1"><li>âœ“ Max 50 Transaksi</li><li>âœ“ Single User Admin</li></ul>
+                    <button class="w-full py-2.5 bg-slate-800 text-slate-300 rounded-xl font-bold text-xs">Plan Saat Ini</button>
+                </div>
+                <div class="bg-gradient-to-b from-pink-600-950/60 to-slate-900/80 border border-pink-600-500/40 p-5 rounded-2xl space-y-3 relative overflow-hidden shadow-2xl hover-glow">
+                    <span class="absolute top-3 right-3 text-[9px] bg-pink-600-500 text-slate-950 font-bold px-2 py-0.5 rounded-full">POPULER</span>
+                    <div class="text-xs text-pink-600-400 font-bold">Pro Business</div>
+                    <div class="text-2xl font-bold text-white">Rp 299.000 <span class="text-xs font-normal text-slate-400">/bln</span></div>
+                    <ul class="text-xs text-slate-300 space-y-1"><li>âœ“ Unlimited Transaksi</li><li>âœ“ WhatsApp & Telegram Gateway</li><li>âœ“ Export PDF & Thermal Print</li></ul>
+                    <button @click="showQrisModal=true" class="w-full py-2.5 bg-pink-600-600 hover:bg-pink-600-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg">Upgrade ke Pro</button>
+                </div>
+                <div class="glass-enhanced border border-indigo-500/30 p-5 rounded-2xl space-y-3">
+                    <div class="text-xs text-indigo-400 font-bold">Enterprise Custom</div>
+                    <div class="text-2xl font-bold text-white">Rp 999.000 <span class="text-xs font-normal text-slate-400">/bln</span></div>
+                    <ul class="text-xs text-slate-300 space-y-1"><li>âœ“ Dedicated Server & DB Backup</li><li>âœ“ SLA 99.9% Uptime</li></ul>
+                    <button @click="showQrisModal=true" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all">Hubungi Sales</button>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+
+    <!-- Toast Notification -->
+    <div x-show="toast.show" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0 translate-y-2" class="fixed bottom-6 right-6 z-50 glass-enhanced border px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3" :class="toast.type === 'success' ? 'border-emerald-500/40' : 'border-red-500/40'">
+        <span x-show="toast.type === 'success'" class="text-emerald-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
+        <span x-show="toast.type === 'error'" class="text-red-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
+        <span class="text-xs text-white font-semibold" x-text="toast.message"></span>
+    </div>
+
+    <!-- Omnichannel Notifications Modal -->
+    <div x-show="showNotifModal" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="glass-enhanced border border-slate-800 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl" @click.away="showNotifModal=false">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">Notification Center</h3>
+                <button @click="showNotifModal=false" class="text-slate-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div class="space-y-2 max-h-[50vh] overflow-y-auto scrollbar-hide">
+                <template x-for="n in notifications" :key="n.id">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-1 hover:border-slate-700 transition-colors">
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="font-bold text-cyan-400" x-text="n.channel"></span>
+                            <span class="text-slate-500" x-text="n.time"></span>
+                        </div>
+                        <div class="text-xs text-white" x-text="n.message"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div x-show="showQrisModal" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="glass-enhanced border border-slate-800 p-6 rounded-3xl max-w-sm w-full space-y-4 text-center shadow-2xl" @click.away="showQrisModal=false">
+            <h3 class="text-base font-bold text-white">Payment Gateway</h3>
+            <p class="text-xs text-slate-400">Scan QRIS untuk tes transaksi:</p>
+            <div class="p-3 bg-white rounded-2xl inline-block shadow-lg">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=00020101021226680016ID.CO.QRIS.WWW01189360050300000894045204581253033605802ID5913EDGARTECH6013BEKASI61051711162070703A016304C74B" class="w-44 h-44 mx-auto" alt="QRIS">
+            </div>
+            <button @click="showQrisModal=false; addAuditLog('PAYMENT', 'Transaksi QRIS Terverifikasi'); showToast('Pembayaran berhasil dikonfirmasi', 'success')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-xl transition-all">Konfirmasi Pembayaran</button>
+        </div>
+    </div>
+
+    <!-- Create / Edit Modal -->
+    <div x-show="showAdd" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div class="glass-enhanced border border-slate-800 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl" @click.away="showAdd=false" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white" x-text="(isEditMode ? 'Edit Data ' : 'Tambah Data Baru ') + addTarget"></h3>
+                <button @click="showAdd=false" class="text-slate-400 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div class="space-y-3 max-h-[50vh] overflow-y-auto scrollbar-hide">
+                <div x-show="addTarget==='tamu'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Nama Tamu</label>
+                    <input x-model="newItem.nama" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Nama Tamu">
+                </div><div x-show="addTarget==='tamu'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Hubungan</label>
+                    <input x-model="newItem.hubungan" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Hubungan">
+                </div><div x-show="addTarget==='tamu'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Jumlah Orang</label>
+                    <input x-model="newItem.jumlah" type="number" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Jumlah Orang">
+                </div><div x-show="addTarget==='tamu'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Konfirmasi (Hadir/Tidak)</label>
+                    <input x-model="newItem.konfirmasi" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Konfirmasi (Hadir/Tidak)">
+                </div><div x-show="addTarget==='tamu'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Catatan</label>
+                    <input x-model="newItem.catatan" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Catatan">
+                </div><div x-show="addTarget==='vendor'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Nama Vendor</label>
+                    <input x-model="newItem.nama" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Nama Vendor">
+                </div><div x-show="addTarget==='vendor'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Kategori Layanan</label>
+                    <input x-model="newItem.kategori" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Kategori Layanan">
+                </div><div x-show="addTarget==='vendor'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Biaya (Rp)</label>
+                    <input x-model="newItem.biaya" type="number" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Biaya (Rp)">
+                </div><div x-show="addTarget==='vendor'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Kontak</label>
+                    <input x-model="newItem.kontak" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Kontak">
+                </div><div x-show="addTarget==='vendor'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Status Kontrak</label>
+                    <input x-model="newItem.status" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Status Kontrak">
+                </div><div x-show="addTarget==='anggaran'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Item Pengeluaran</label>
+                    <input x-model="newItem.item" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Item Pengeluaran">
+                </div><div x-show="addTarget==='anggaran'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Anggaran (Rp)</label>
+                    <input x-model="newItem.anggaran" type="number" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Anggaran (Rp)">
+                </div><div x-show="addTarget==='anggaran'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Realisasi (Rp)</label>
+                    <input x-model="newItem.realisasi" type="number" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Realisasi (Rp)">
+                </div><div x-show="addTarget==='anggaran'" class="fade-in-up">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Status Bayar</label>
+                    <input x-model="newItem.status" type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/30 transition-all input-glow" placeholder="Status Bayar">
+                </div>
+                <div class="pt-2">
+                    <label class="block text-slate-400 text-xs mb-1.5 font-bold">Lampiran / Foto</label>
+                    <input type="file" @change="handleFileUpload($event)" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-pink-400 hover:file:bg-slate-700 cursor-pointer">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button @click="saveItem()" class="flex-1 bg-gradient-to-r from-pink-600 to-fuchsia-600 text-white font-bold text-xs py-2.5 rounded-xl shadow-lg btn-shine transition-all hover:opacity-90" x-text="isEditMode ? 'Update Data' : 'Simpan Data'"></button>
+                <button @click="showAdd=false" class="bg-slate-800 text-slate-300 font-bold text-xs px-5 py-2.5 rounded-xl hover:bg-slate-700 transition-all">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-slate-800/40 py-6 text-center text-[10px] text-slate-600 relative z-10">Aplikasi Aplikasi Undangan Pernikahan Enterprise &mdash; Built by E.D.G.A.R &mdash; EdgarTech Corp &copy; 2026</footer>
+
+    <script src="/app.js"></script>
+    <script>
+        function appData() {
+            return {
+                userRole: 'SUPERADMIN',
+                activeTab: 'dashboard',
+                mobileNavOpen: false,
+                showAdd: false,
+                showQrisModal: false,
+                showNotifModal: false,
+                isEditMode: false,
+                editIndex: -1,
+                addTarget: 'tamu',
+                newItem: {},
+                toast: { show: false, message: '', type: 'success' },
+
+                notifications: [
+                    { id: 1, channel: 'WhatsApp', message: 'Sistem Enterprise Aktif', time: 'Just now' },
+                    { id: 2, channel: 'Telegram', message: 'Notifikasi Telemetri Terhubung', time: '1 min ago' }
+                ],
+
+                auditLogs: JSON.parse(localStorage.getItem('edgar_audit_logs')) || [
+                    { id: 1, timestamp: new Date().toLocaleTimeString(), user: 'System', action: 'LOGIN', details: 'Session Verified' }
+                ],
+
+            tamu: JSON.parse(localStorage.getItem("edgar_app_tamu")) || [{"id": 1, "nama": "Keluarga Besar Paman Joko", "hubungan": "Keluarga Mempelai Pria", "jumlah": 15, "konfirmasi": "Hadir", "catatan": "Meja VIP"}, {"id": 2, "nama": "Rombongan Kantor Mempelai", "hubungan": "Rekan Kerja", "jumlah": 20, "konfirmasi": "Hadir", "catatan": ""}],
+            vendor: JSON.parse(localStorage.getItem("edgar_app_vendor")) || [{"id": 1, "nama": "Dewi Makeup Artist", "kategori": "MUA & Rias", "biaya": 15000000, "kontak": "081234567890", "status": "Terkonfirmasi"}, {"id": 2, "nama": "Catering Sedap Nikmat", "kategori": "Katering 500 Pax", "biaya": 85000000, "kontak": "082345678901", "status": "Terkonfirmasi"}],
+            anggaran: JSON.parse(localStorage.getItem("edgar_app_anggaran")) || [{"id": 1, "item": "Venue & Dekorasi", "anggaran": 120000000, "realisasi": 115000000, "status": "Lunas"}, {"id": 2, "item": "Katering 500 Pax", "anggaran": 85000000, "realisasi": 85000000, "status": "DP Terbayar"}],
+
+                initCharts() {
+                    setTimeout(() => {
+                        const ctx = document.getElementById('mainAnalyticsChart');
+                        if (ctx) {
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
+                                    datasets: [{
+                                        label: 'Volume Transaksi',
+                                        data: [25, 45, 60, 85, 110, 150, 195],
+                                        borderColor: '#06b6d4',
+                                        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointBackgroundColor: '#06b6d4',
+                                        pointBorderColor: '#0e1729',
+                                        pointBorderWidth: 2,
+                                        pointRadius: 4,
+                                        pointHoverRadius: 6
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { labels: { color: '#94a3b8', usePointStyle: true, padding: 16 } } },
+                                    scales: {
+                                        x: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                                        y: { grid: { color: 'rgba(51, 65, 85, 0.3)' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+                                    },
+                                    interaction: { intersect: false, mode: 'index' }
+                                }
+                            });
+                        }
+                    }, 300);
+                },
+
+                showToast(message, type) {
+                    this.toast = { show: true, message: message, type: type || 'success' };
+                    setTimeout(() => { this.toast.show = false; }, 3000);
+                },
+
+                addAuditLog(action, details) {
+                    this.auditLogs.unshift({
+                        id: Date.now(),
+                        timestamp: new Date().toLocaleTimeString(),
+                        user: (JSON.parse(localStorage.getItem('app_user') || '{}').name || 'User') + ' (' + this.userRole + ')',
+                        action: action,
+                        details: details
+                    });
+                    this.persistAuditLogs();
+                },
+
+                persistAuditLogs() {
+                    localStorage.setItem('edgar_audit_logs', JSON.stringify(this.auditLogs));
+                },
+
+                handleLogout() {
+                    localStorage.removeItem('app_auth_token');
+                    localStorage.removeItem('app_user');
+                    window.location.href = '/login';
+                },
+
+                triggerWAGateway() {
+                    const msg = 'Notifikasi WA: Status Transaksi Terbaru Berhasil Diperbarui!';
+                    this.notifications.unshift({ id: Date.now(), channel: 'WhatsApp Gateway', message: msg, time: 'Just now' });
+                    this.showToast('WA Gateway: ' + msg, 'success');
+                },
+
+                handleFileUpload(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.newItem['attachment'] = file.name;
+                        this.addAuditLog('FILE_UPLOAD', 'File diunggah: ' + file.name);
+                    }
+                },
+
+                openCreateModal(target) {
+                    this.addTarget = target;
+                    this.isEditMode = false;
+                    this.newItem = {};
+                    this.showAdd = true;
+                },
+                openEditModal(item, index, target) {
+                    this.addTarget = target;
+                    this.isEditMode = true;
+                    this.editIndex = index;
+                    this.newItem = JSON.parse(JSON.stringify(item));
+                    this.showAdd = true;
+                },
+                deleteItem(index, target) {
+                    if (confirm('Yakin ingin menghapus data ini?')) {
+                        this.addAuditLog('DELETE', 'Menghapus data ' + target);
+                        this[target].splice(index, 1);
+                        this.persistData(target);
+                        this.showToast('Data berhasil dihapus', 'success');
+                    }
+                },
+                persistData(target) {
+                    localStorage.setItem('edgar_app_' + target, JSON.stringify(this[target]));
+                },
+                exportCsv(entityName) {
+                    const data = this[entityName];
+                    if (!data || !data.length) return this.showToast('Tidak ada data untuk diexport', 'error');
+                    const headers = Object.keys(data[0]).join(',');
+                    const rows = data.map(obj => Object.values(obj).join(',')).join('\n');
+                    const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", entityName + "_export.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    this.addAuditLog('EXPORT_CSV', 'Diexport data ' + entityName);
+                    this.showToast('CSV berhasil diexport', 'success');
+                },
+                saveItem() {
+                    if (this.addTarget === "tamu") { if (this.isEditMode) { this.tamu[this.editIndex] = { ...this.newItem }; this.addAuditLog("UPDATE", "Memperbarui data tamu"); } else { this.tamu.unshift({ id: Date.now(), ...this.newItem }); this.addAuditLog("CREATE", "Menambah data baru tamu"); } this.persistData("tamu"); }
+                    else if (this.addTarget === "vendor") { if (this.isEditMode) { this.vendor[this.editIndex] = { ...this.newItem }; this.addAuditLog("UPDATE", "Memperbarui data vendor"); } else { this.vendor.unshift({ id: Date.now(), ...this.newItem }); this.addAuditLog("CREATE", "Menambah data baru vendor"); } this.persistData("vendor"); }
+                    else if (this.addTarget === "anggaran") { if (this.isEditMode) { this.anggaran[this.editIndex] = { ...this.newItem }; this.addAuditLog("UPDATE", "Memperbarui data anggaran"); } else { this.anggaran.unshift({ id: Date.now(), ...this.newItem }); this.addAuditLog("CREATE", "Menambah data baru anggaran"); } this.persistData("anggaran"); }
+                    this.newItem = {};
+                    this.showAdd = false;
+                    this.showToast(this.isEditMode ? 'Data berhasil diupdate' : 'Data berhasil ditambahkan', 'success');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
